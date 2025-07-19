@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite thread-count="2" parallel="classes" name="home-module">
+	<parameter name="environment" value="UAT" />
+	<parameter name="buildnumber" value="0000" />
+	<parameter name="browser" value="Chrome" />
+	<parameter name="group" value="Regression" />
+	<test thread-count="2" parallel="classes" name="home-module-tests">
+		<classes>
+			<class name="com.trgan.home.TC01_HomePage" />
+		</classes>
+  	</test> <!-- home-module-tests -->
+</suite> <!-- home-module -->

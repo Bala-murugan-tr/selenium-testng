@@ -1,0 +1,128 @@
+trigger:
+  branches:
+    include:
+      - main
+
+parameters:
+  - name: env
+    displayName: 'Execution Environment'
+    type: string
+    default: 'QA'
+    values:
+      - QA
+      - UAT
+      - STAGING
+      - PROD
+
+  - name: version
+    displayName: 'App Version'
+    type: string
+    default:
+  - name: browser
+    displayName: 'Browser'
+    type: string
+    default: Chrome
+    values:
+      - Chrome
+      - Edge
+      - Firefox
+      - Safari
+  
+  - name: headless
+    displayName: 'Headless Mode'
+    type: boolean
+    default: true
+    values:
+      - true
+      - false
+
+  - name: incognito
+    displayName: 'Incognito Mode'
+    type: boolean
+    default: false
+    values:
+      - true
+      - false
+      
+  - name: retryCount
+    displayName: 'Action Retries'
+    type: string
+    default: '2'
+    values:
+      - 0
+      - 1
+      - 2
+      - 3
+
+  - name: screenshotOnNode
+    displayName: 'Screenshot On Node'
+    type: boolean
+    default: false
+    values:
+      - true
+      - false
+      
+  - name: screenshotOnFailure
+    displayName: 'Screenshot On Failure'
+    type: boolean
+    default: true
+    values:
+      - true
+      - false
+
+  - name: screenshotOnSuccess
+    displayName: 'Screenshot On Success'
+    type: boolean
+    default: false
+    values:
+      - true
+      - false
+
+  - name: testSuitePath
+    displayName: 'Suite File Path (comma separated value)'
+    type: string
+    default: 'login_testng.xml'
+
+pool:
+  name: P1
+
+steps:
+  - powershell: |
+      $paths = "${{ parameters.testSuitePath }}".Split(',') | ForEach-Object { $_.Trim() }
+      $full_path = ''
+      foreach ($path in $paths) {
+        Write-Host "XML: $path"
+        $full_path += "src/test/resources/testsuite/$path,"
+      }
+      $full_path = $full_path.TrimEnd(',')
+      Write-Host "##vso[task.setvariable variable=suitePaths]$full_path"
+    displayName: 'Read Suite Files'
+
+  - task: Maven@4
+    displayName: 'Execute Suite Files'
+    inputs:
+      mavenPomFile: 'pom.xml'
+      goals: 'clean test'
+      options: >
+        -Dapp.version=${{parameters.version}}
+        -Denv.name=${{ parameters.env }}
+        -Dexecution.browser=${{ parameters.browser }}
+        -Dheadless=${{ parameters.headless }}
+        -Dincognito=${{ parameters.incognito }}
+        -Dscreenshot.onNodes=${{ parameters.headless }}
+        -Dscreenshot.onFailure=${{ parameters.screenshotOnNode }}
+        -Dscreenshot.onSuccess=${{ parameters.screenshotOnSuccess }}
+        -Dsurefire.suiteXmlFiles=$(suitePaths)
+      publishJUnitResults: false
+      javaHomeOption: 'JDKVersion'
+      mavenVersionOption: 'Default'
+      mavenAuthenticateFeed: false
+      effectivePomSkip: false
+      sonarQubeRunAnalysis: false
+
+  - task: PublishPipelineArtifact@1
+    displayName: 'Publish Report'
+    condition: succeededOrFailed()
+    inputs:
+      targetPath: '$(System.DefaultWorkingDirectory)/target/reports'
+      artifact: 'selenium-report'
