@@ -4,6 +4,7 @@ import java.util.Map;
 
 import org.openqa.selenium.WebDriver;
 
+import com.trgan.base.ResultData;
 import com.trgan.exceptions.ContextException;
 import com.trgan.framework.actions.ActionEngineImpl;
 import com.trgan.framework.config.EnvironmentProperties;
@@ -29,6 +30,7 @@ public class ActionEngine {
 	protected final EnvironmentProperties executionProps = TestEngine.environmentProps;
 	protected final TestLogger logger = TestContextManager.getLogger();
 	protected final WebDriver driver = TestContextManager.getContext().getDriverContext().getDriver();
+	protected final ResultData resultData = TestContextManager.getContext().getReportContext().getResultData();
 
 	public ActionEngine() {
 		int maxAttempts = FrameworkProperties.retryMaxAttempt();

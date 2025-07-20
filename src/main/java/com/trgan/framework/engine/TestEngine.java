@@ -2,6 +2,9 @@ package com.trgan.framework.engine;
 
 import java.io.File;
 import java.lang.reflect.Method;
+import java.time.Duration;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -23,6 +26,8 @@ import com.aventstack.extentreports.markuputils.ExtentColor;
 import com.aventstack.extentreports.markuputils.MarkupHelper;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 import com.aventstack.extentreports.reporter.configuration.ViewName;
+import com.trgan.base.HtmlBuilder;
+import com.trgan.base.ResultStatus;
 import com.trgan.exceptions.ContextException;
 import com.trgan.framework.config.EnvironmentProperties;
 import com.trgan.framework.config.FrameworkProperties;
@@ -49,8 +54,9 @@ public class TestEngine {
 
 	public static EnvironmentProperties environmentProps;
 	public static FrameworkProperties frameworkProps;
-
 	private static ExtentReports consolidatedReport;
+
+	public static HtmlBuilder html = new HtmlBuilder();
 
 	/**
 	 * Used to create a new test node in current extent-test for logging. On each
@@ -101,13 +107,14 @@ public class TestEngine {
 	@BeforeMethod
 	public void setupMethod(String group, Method method) {
 		try {
+			var startTime = LocalTime.now();
 			// Initialize an empty TestContext and register to TestContextManager
 			TestContext ctx = new TestContext(null, null, null, null);
 			TestContextManager.setContext(ctx);
 			var testClassName = method.getDeclaringClass().getSimpleName();
 			var logger = createLogger(testClassName);
 			logger.log("TESTCASE INITIATED: " + testClassName);
-			var meta = createMetaData(group, testClassName);
+			var meta = createMetaData(group, testClassName, startTime);
 			logger.log("METADATA : " + meta.toString());
 			createReports(testClassName, logger);
 			readExcel();
@@ -130,6 +137,7 @@ public class TestEngine {
 	@AfterMethod(alwaysRun = true)
 	public void tearDownMethod(ITestResult result, Method method) {
 		try {
+			attachReportData();
 			executionResult(result, method.getDeclaringClass().getSimpleName());
 			flushReport();
 			quitBrowser();
@@ -169,11 +177,11 @@ public class TestEngine {
 		return new TestLogger(testClassName);
 	}
 
-	private MetaData createMetaData(String group, String testClassName) {
+	private MetaData createMetaData(String group, String testClassName, LocalTime startTime) {
 		var browser = FrameworkProperties.getExecutionBrowser();
 		var environment = environmentProps.getEnvName();
 		var buildNmr = environmentProps.getAppVersion();
-		MetaData meta = new MetaData(browser, environment, buildNmr, group, testClassName);
+		MetaData meta = new MetaData(browser, environment, buildNmr, group, testClassName, startTime);
 		TestContextManager.getContext().setMetaData(meta);
 		return meta;
 	}
@@ -191,6 +199,7 @@ public class TestEngine {
 		logger.log("EXTENT REPORT CREATED : " + userPath + File.separator + extentReportPath);
 		var globalTest = createGlobalTest(testClassName);
 		ReportContext reportCtx = new ReportContext(individualExtent, globalTest, test, logger, reportDir);
+		reportCtx.getResultData().testCase = testClassName;
 		TestContextManager.getContext().setReportContext(reportCtx);
 	}
 
@@ -222,6 +231,8 @@ public class TestEngine {
 			var node = rtx.getNode();
 			switch (result.getStatus()) {
 			case ITestResult.SUCCESS:
+				attachStatus("PASS");
+				html.addIndividualReport(testClassName, reportPath);
 				globalTest.log(Status.PASS, MarkupHelper.createLabel("<a href='." + reportPath
 						+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
 						+ testClassName + "</a>", ExtentColor.GREEN));
@@ -230,6 +241,8 @@ public class TestEngine {
 				}
 				break;
 			case ITestResult.FAILURE:
+				attachStatus("FAIL");
+				html.addIndividualReport(testClassName, reportPath);
 				globalTest.log(Status.FAIL, MarkupHelper.createLabel("<a href='." + reportPath
 						+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
 						+ testClassName + "</a>", ExtentColor.RED));
@@ -238,6 +251,8 @@ public class TestEngine {
 				}
 				break;
 			case ITestResult.SKIP:
+				attachStatus("SKIP");
+				html.addIndividualReport(testClassName, reportPath);
 				globalTest.log(Status.SKIP, MarkupHelper.createLabel("<a href='." + reportPath
 						+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
 						+ testClassName + "</a>", ExtentColor.GREY));
@@ -340,5 +355,34 @@ public class TestEngine {
 			consolidatedReport.flush();
 		}
 		consolidatedReport = null;
+		var executor = environmentProps.getExecutor();
+		var mode = FrameworkProperties.getExecutionMode().toString();
+		html.generate(executor, mode, FrameworkProperties.getReportDir() + File.separator + "custom-report.html");
 	}
+
+	private void attachStatus(String result) {
+		var testName = TestContextManager.getContext().getMetaData().getTestClassName();
+		var group = TestContextManager.getContext().getMetaData().getTestGroup();
+		var startTime = TestContextManager.getContext().getMetaData().getStartTime();
+		var endTime = LocalTime.now();
+		Duration duration = Duration.between(startTime, endTime);
+		long seconds = duration.getSeconds();
+		String formattedDuration = String.format("%02d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60);
+
+		var status = new ResultStatus();
+		status.testName = testName;
+		status.group = group;
+		status.startTime = startTime.format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+		status.endTime = endTime.format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+		status.duration = formattedDuration;
+		status.result = result;
+
+		html.addStatus(status);
+	}
+
+	private void attachReportData() {
+		var resultData = TestContextManager.getContext().getReportContext().getResultData();
+		html.addData(resultData);
+	}
+
 }
