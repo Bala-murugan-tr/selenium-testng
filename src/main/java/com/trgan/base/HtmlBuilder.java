@@ -102,7 +102,7 @@ public class HtmlBuilder {
 			}
 			String finalHtml = template.replace("<!-- STATUS_START -->", statusHtml.toString())
 					.replace("<!-- SUMMARY_PANEL_START -->", summaryHtml).replace("<!-- META_INFO_LINE -->", metaLine)
-					.replace("<!-- DATA_START -->", resultHtml.toString())
+					.replace("<!-- DATA_START -->", resultHtml.toString().replaceAll("null", "-"))
 					.replace("<!-- PATH_START -->", linkRows.toString());
 
 			Files.writeString(Paths.get(outputPath), finalHtml, StandardOpenOption.CREATE,

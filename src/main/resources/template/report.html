@@ -113,17 +113,52 @@ h1{ text-align: center;
     margin-bottom: 20px;
     border-bottom: 2px solid #dfe6e9;
     font-weight: bold;
-    
 }
+
+h2.link-title {
+    border-top: 2px solid #dfe6e9;
+    text-align: left;
+    padding-left: 20px;
+    margin-top: 40px;
+    color: #34495e;
+}
+
+
 td:first-child {
+    padding-left: 50px;
+    text-align: left;
     font-weight: bold;
 }
-.link-table {
-    width: 80%;
-    margin-left: auto;
+
+table[name="link-table"] {
+    width: 60%;
+    margin-left: 0;
     margin-right: auto;
-    padding-left: 10px;
-    padding-right: 10px;
+    border-collapse: collapse;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    background-color: #fff;
+}
+
+table[name="link-table"] th {
+    border: 1px solid #dce1e7;
+    text-align: left;
+    padding-left: 50px;
+}
+
+table[name="link-table"] tr:hover td {
+    background-color: #f2f8ff;
+    transition: background-color 0.3s ease;
+}
+
+table[name="link-table"] a {
+    color: #1a3d8f;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+table[name="link-table"] a:hover {
+    color: #17a2b8;
+    text-decoration: underline;
 }
 
 table {
@@ -238,13 +273,15 @@ a:hover {
         </tr>
         <!-- DATA_START -->
     </table>
-    <h2>Individual Reports</h2>
-    <table>
-        <tr>
-            <th>Test Name</th>
-        </tr>
-        <!-- PATH_START -->
-    </table>
+    <br>
+    <h2 class="link-title">Individual Reports</h2>
+    <p>Note: paths are valid only if the file is in report directory</p>
+        <table name="link-table">
+            <tr>
+                <th>Test Name</th>
+            </tr>
+            <!-- PATH_START -->
+        </table>
 
 </body>
 
