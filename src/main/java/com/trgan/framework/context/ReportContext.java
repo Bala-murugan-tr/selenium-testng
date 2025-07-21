@@ -2,7 +2,7 @@ package com.trgan.framework.context;
 
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
-import com.trgan.base.ResultData;
+import com.trgan.framework.reporter.ResultData;
 import com.trgan.framework.utils.TestLogger;
 
 /**

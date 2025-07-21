@@ -4,7 +4,6 @@ import java.util.Map;
 
 import org.openqa.selenium.WebDriver;
 
-import com.trgan.base.ResultData;
 import com.trgan.exceptions.ContextException;
 import com.trgan.framework.actions.ActionEngineImpl;
 import com.trgan.framework.config.EnvironmentProperties;
@@ -14,6 +13,7 @@ import com.trgan.framework.context.TestContext;
 import com.trgan.framework.context.TestContextManager;
 import com.trgan.framework.factory.RetryProxyFactory;
 import com.trgan.framework.interfaces.IActionEngine;
+import com.trgan.framework.reporter.ResultData;
 import com.trgan.framework.utils.ExcelReader;
 import com.trgan.framework.utils.TestLogger;
 

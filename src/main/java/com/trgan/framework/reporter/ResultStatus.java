@@ -1,4 +1,4 @@
-package com.trgan.base;
+package com.trgan.framework.reporter;
 
 public final class ResultStatus {
 	public String testName;

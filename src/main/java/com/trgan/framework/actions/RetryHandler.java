@@ -22,9 +22,8 @@ public class RetryHandler {
 					log("🔁 " + actionDescription + " failed on attempt " + attempt + ": " + t.getCause());
 					sleep(delayMs);
 				} else {
-					log(
-							"❌ " + actionDescription + " failed after " + maxAttempts + " attempts" + " - "
-									+ lastThrowable.getCause());
+					log("❌ " + actionDescription + " failed after " + maxAttempts + " attempts" + " - "
+							+ lastThrowable.getCause());
 
 				}
 			}
@@ -38,13 +37,11 @@ public class RetryHandler {
 		var traces = throwable.getStackTrace();
 		ArrayList<StackTraceElement> ee = new ArrayList<StackTraceElement>();
 		for (StackTraceElement trace : traces) {
-			if (trace.getClassName().contains("com.trgan"))
-				ee.add(
-						new StackTraceElement(
-								trace.getClassName(),
-								trace.getMethodName(),
-								trace.getFileName(),
+			if (trace.getClassName().contains("com.trgan")) {
+				ee
+						.add(new StackTraceElement(trace.getClassName(), trace.getMethodName(), trace.getFileName(),
 								trace.getLineNumber()));
+			}
 		}
 		return ee.toArray(new StackTraceElement[0]);
 	}
@@ -61,7 +58,6 @@ public class RetryHandler {
 		var ctx = TestContextManager.getContext().getReportContext();
 		message = message.split("Build info")[0];
 		ctx.getLogger().log(message);
-//		ctx.getNode().warning(message);
 	}
 
 	@FunctionalInterface

@@ -26,8 +26,6 @@ import com.aventstack.extentreports.markuputils.ExtentColor;
 import com.aventstack.extentreports.markuputils.MarkupHelper;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 import com.aventstack.extentreports.reporter.configuration.ViewName;
-import com.trgan.base.HtmlBuilder;
-import com.trgan.base.ResultStatus;
 import com.trgan.exceptions.ContextException;
 import com.trgan.framework.config.EnvironmentProperties;
 import com.trgan.framework.config.FrameworkProperties;
@@ -39,6 +37,8 @@ import com.trgan.framework.context.TestContext;
 import com.trgan.framework.context.TestContextManager;
 import com.trgan.framework.enums.BrowserType;
 import com.trgan.framework.factory.BrowserFactory;
+import com.trgan.framework.reporter.HtmlBuilder;
+import com.trgan.framework.reporter.ResultStatus;
 import com.trgan.framework.utils.ExcelReader;
 import com.trgan.framework.utils.TestLogger;
 
@@ -116,7 +116,7 @@ public class TestEngine {
 			logger.log("TESTCASE INITIATED: " + testClassName);
 			var meta = createMetaData(group, testClassName, startTime);
 			logger.log("METADATA : " + meta.toString());
-			createReports(testClassName, logger);
+			createReports(group, testClassName, logger);
 			readExcel();
 			var browser = FrameworkProperties.getExecutionBrowser();
 			var driver = createDriver(browser);
@@ -161,8 +161,11 @@ public class TestEngine {
 
 	private void initConsolidatedReport(String group, String suiteName) {
 		String dir = FrameworkProperties.getReportDir() + File.separator + suiteName + "_ConsolidatedReport.html";
-		ExtentSparkReporter reporter = new ExtentSparkReporter(dir).viewConfigurer().viewOrder()
-				.as(new ViewName[] { ViewName.DASHBOARD, ViewName.TEST }).apply();
+		ExtentSparkReporter reporter = new ExtentSparkReporter(dir)
+				.viewConfigurer()
+				.viewOrder()
+				.as(new ViewName[] { ViewName.DASHBOARD, ViewName.TEST })
+				.apply();
 		reporter.config().setReportName("TRGAN " + suiteName + " Suite Summary");
 
 		consolidatedReport = new ExtentReports();
@@ -186,7 +189,7 @@ public class TestEngine {
 		return meta;
 	}
 
-	private void createReports(String testClassName, TestLogger logger) {
+	private void createReports(String group, String testClassName, TestLogger logger) {
 		var reportDir = FrameworkProperties.getReportDir() + File.separator + testClassName;
 		var userPath = System.getProperty("user.dir");
 		logger.log("REPORT PATH : " + userPath + File.separator + reportDir);
@@ -200,6 +203,7 @@ public class TestEngine {
 		var globalTest = createGlobalTest(testClassName);
 		ReportContext reportCtx = new ReportContext(individualExtent, globalTest, test, logger, reportDir);
 		reportCtx.getResultData().testCase = testClassName;
+		reportCtx.getResultData().group = group;
 		TestContextManager.getContext().setReportContext(reportCtx);
 	}
 
@@ -228,43 +232,18 @@ public class TestEngine {
 		try {
 			var rtx = TestContextManager.getContext().getReportContext();
 			var globalTest = rtx.getGlobalTest();
+			var individualTest = rtx.getIndividualTest();
 			var node = rtx.getNode();
-			switch (result.getStatus()) {
-			case ITestResult.SUCCESS:
-				attachStatus("PASS");
-				html.addIndividualReport(testClassName, reportPath);
-				globalTest.log(Status.PASS, MarkupHelper.createLabel("<a href='." + reportPath
-						+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
-						+ testClassName + "</a>", ExtentColor.GREEN));
-				if (FrameworkProperties.screenshotonSuccess()) {
-					attachScreenshot(node);
-				}
-				break;
-			case ITestResult.FAILURE:
-				attachStatus("FAIL");
-				html.addIndividualReport(testClassName, reportPath);
-				globalTest.log(Status.FAIL, MarkupHelper.createLabel("<a href='." + reportPath
-						+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
-						+ testClassName + "</a>", ExtentColor.RED));
-				if (FrameworkProperties.screenshotonFailure()) {
-					attachScreenshot(node);
-				}
-				break;
-			case ITestResult.SKIP:
-				attachStatus("SKIP");
-				html.addIndividualReport(testClassName, reportPath);
-				globalTest.log(Status.SKIP, MarkupHelper.createLabel("<a href='." + reportPath
-						+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
-						+ testClassName + "</a>", ExtentColor.GREY));
-				break;
-			}
+
 			if (result.getStatus() != ITestResult.SUCCESS) {
 				Throwable root = ExceptionUtils.getRootCause(result.getThrowable());
 				StringBuilder refined = new StringBuilder("❌ Exception Location:<br>");
 				for (StackTraceElement el : root.getStackTrace()) {
 					if (el.getClassName().startsWith("com.trgan")) {
-						refined.append(String.format("↳ %s.%s():%d<br>", el.getClassName(), el.getMethodName(),
-								el.getLineNumber()));
+						refined
+								.append(String
+										.format("↳ %s.%s():%d<br>", el.getClassName(), el.getMethodName(),
+												el.getLineNumber()));
 					}
 				}
 				var trace = refineStackTrace(root.getStackTrace());
@@ -273,11 +252,57 @@ public class TestEngine {
 				System.out.println(exceptionName);
 				System.err.println(exceptionMessage);
 				System.err.println(trace);
-				if (node != null) {
-					node.fail(exceptionName + " | " + exceptionMessage + " | ");
+
+				switch (result.getStatus()) {
+
+				case ITestResult.FAILURE:
+					attachStatus("FAIL");
+					html.addIndividualReport(testClassName, reportPath, exceptionMessage, "FAIL");
+					if (node != null) {
+						node.fail(exceptionName + " | " + exceptionMessage + " | ");
+					} else {
+						individualTest.fail(exceptionName + " | " + exceptionMessage + " | ");
+					}
+					globalTest
+							.fail(MarkupHelper
+									.createLabel("<a href='." + reportPath
+											+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
+											+ testClassName + "</a>", ExtentColor.RED));
+					if (FrameworkProperties.screenshotonFailure()) {
+						attachScreenshot(node, Status.FAIL);
+					}
+					break;
+				case ITestResult.SKIP:
+					attachStatus("SKIP");
+					html.addIndividualReport(testClassName, reportPath, exceptionMessage, "SKIP");
+					if (node != null) {
+						node.skip(exceptionName + " | " + exceptionMessage + " | ");
+					} else {
+						individualTest.skip(exceptionName + " | " + exceptionMessage + " | ");
+					}
+					globalTest
+							.skip(MarkupHelper
+									.createLabel("<a href='." + reportPath
+											+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
+											+ testClassName + "</a>", ExtentColor.GREY));
+					if (FrameworkProperties.screenshotonFailure()) {
+						attachScreenshot(node, Status.SKIP);
+					}
+					break;
 				}
-				globalTest.fail(exceptionName + " | " + exceptionMessage + " | " + trace);
+
 				TestContextManager.getLogger().log("TEST RESULT UPDATED TO REPORTS");
+			} else {
+				attachStatus("PASS");
+				html.addIndividualReport(testClassName, reportPath, "", "PASS");
+				globalTest
+						.pass(MarkupHelper
+								.createLabel("<a href='." + reportPath
+										+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
+										+ testClassName + "</a>", ExtentColor.GREEN));
+				if (FrameworkProperties.screenshotonSuccess()) {
+					attachScreenshot(node, Status.PASS);
+				}
 			}
 		} catch (Exception e) {
 			System.out.println("executionResult() Failed !!");
@@ -294,10 +319,22 @@ public class TestEngine {
 	 * @param node The ExtentTest node to which the screenshot will be attached.
 	 * @throws ContextException if the node is null or screenshot capture fails.
 	 */
-	private static void attachScreenshot(ExtentTest node) {
+	private static void attachScreenshot(ExtentTest node, Status status) {
+
 		if (node == null) {
 			throw new ContextException("Node is null, please make sure 'createNode' function is called atleast once");
 		}
+		var driver = TestContextManager.getContext().getDriverContext().getDriver();
+		try {
+			String srcFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BASE64);
+			node.log(status, "Exceution Complete");
+			node.addScreenCaptureFromBase64String(srcFile);
+		} catch (Exception e) {
+			node.warning("Attaching Screenshot failed: " + e.getMessage());
+		}
+	}
+
+	private static void attachScreenshot(ExtentTest node) {
 		var driver = TestContextManager.getContext().getDriverContext().getDriver();
 		try {
 			String srcFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BASE64);
@@ -311,8 +348,17 @@ public class TestEngine {
 		StringBuilder sb = new StringBuilder();
 		for (StackTraceElement trace : stackTraceElements) {
 			if (trace.getClassName().contains("com.trgan")) {
-				sb.append("at ").append(trace.getClassName()).append(".").append(trace.getMethodName()).append("(")
-						.append(trace.getFileName()).append(":").append(trace.getLineNumber()).append(")").append("\n");
+				sb
+						.append("at ")
+						.append(trace.getClassName())
+						.append(".")
+						.append(trace.getMethodName())
+						.append("(")
+						.append(trace.getFileName())
+						.append(":")
+						.append(trace.getLineNumber())
+						.append(")")
+						.append("\n");
 			}
 		}
 		return sb + "";
