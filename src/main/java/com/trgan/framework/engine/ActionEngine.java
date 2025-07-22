@@ -33,10 +33,9 @@ public class ActionEngine {
 	protected final TestLogger logger = TestContextManager.getLogger();
 	protected final WebDriver driver = TestContextManager.getContext().getDriverContext().getDriver();
 	protected final ResultData resultData = TestContextManager.getContext().getReportContext().getResultData();
-<<<<<<< HEAD
+
 	protected final MetaData metaData = TestContextManager.getContext().getMetaData();
-=======
->>>>>>> c185ebe (Added Custom HTML Report and Enhanced Screenshot Size Optimization)
+
 
 	public ActionEngine() {
 		int maxAttempts = FrameworkProperties.retryMaxAttempt();
