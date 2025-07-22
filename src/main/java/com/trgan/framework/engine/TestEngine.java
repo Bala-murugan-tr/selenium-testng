@@ -141,6 +141,7 @@ public class TestEngine {
 			executionResult(result, method.getDeclaringClass().getSimpleName());
 			flushReport();
 			quitBrowser();
+			TestContextManager.getContext().getReportContext().getLogger().flush();
 			TestContextManager.removeContext();
 		} catch (Exception e) {
 			System.out.println("TestEngine.tearDownMethod() Failed !!");
@@ -161,6 +162,8 @@ public class TestEngine {
 
 	private void initConsolidatedReport(String group, String suiteName) {
 		String dir = FrameworkProperties.getReportDir() + File.separator + suiteName + "_ConsolidatedReport.html";
+		ExtentSparkReporter reporter = new ExtentSparkReporter(dir).viewConfigurer().viewOrder()
+				.as(new ViewName[] { ViewName.DASHBOARD, ViewName.TEST }).apply();
 		ExtentSparkReporter reporter = new ExtentSparkReporter(dir).viewConfigurer().viewOrder()
 				.as(new ViewName[] { ViewName.DASHBOARD, ViewName.TEST }).apply();
 		reporter.config().setReportName("TRGAN " + suiteName + " Suite Summary");
@@ -265,6 +268,8 @@ public class TestEngine {
 					if (el.getClassName().startsWith("com.trgan")) {
 						refined.append(String.format("↳ %s.%s():%d<br>", el.getClassName(), el.getMethodName(),
 								el.getLineNumber()));
+						refined.append(String.format("↳ %s.%s():%d<br>", el.getClassName(), el.getMethodName(),
+								el.getLineNumber()));
 					}
 				}
 				var trace = refineStackTrace(root.getStackTrace());
@@ -273,11 +278,51 @@ public class TestEngine {
 				System.out.println(exceptionName);
 				System.err.println(exceptionMessage);
 				System.err.println(trace);
-				if (node != null) {
-					node.fail(exceptionName + " | " + exceptionMessage + " | ");
+
+				switch (result.getStatus()) {
+
+				case ITestResult.FAILURE:
+					attachStatus("FAIL");
+					html.addIndividualReport(testClassName, reportPath, exceptionMessage, "FAIL");
+					if (node != null) {
+						node.fail(exceptionName + " | " + exceptionMessage + " | ");
+					} else {
+						individualTest.fail(exceptionName + " | " + exceptionMessage + " | ");
+					}
+					globalTest.fail(MarkupHelper.createLabel("<a href='." + reportPath
+							+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
+							+ testClassName + "</a>", ExtentColor.RED));
+					if (FrameworkProperties.screenshotonFailure()) {
+						attachScreenshot(node, Status.FAIL);
+					}
+					break;
+				case ITestResult.SKIP:
+					attachStatus("SKIP");
+					html.addIndividualReport(testClassName, reportPath, exceptionMessage, "SKIP");
+					if (node != null) {
+						node.skip(exceptionName + " | " + exceptionMessage + " | ");
+					} else {
+						individualTest.skip(exceptionName + " | " + exceptionMessage + " | ");
+					}
+					globalTest.skip(MarkupHelper.createLabel("<a href='." + reportPath
+							+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
+							+ testClassName + "</a>", ExtentColor.GREY));
+					if (FrameworkProperties.screenshotonFailure()) {
+						attachScreenshot(node, Status.SKIP);
+					}
+					break;
 				}
-				globalTest.fail(exceptionName + " | " + exceptionMessage + " | " + trace);
+
 				TestContextManager.getLogger().log("TEST RESULT UPDATED TO REPORTS");
+			} else {
+				attachStatus("PASS");
+				html.addIndividualReport(testClassName, reportPath, "", "PASS");
+				globalTest.pass(MarkupHelper.createLabel("<a href='." + reportPath
+						+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
+						+ testClassName + "</a>", ExtentColor.GREEN));
+				if (FrameworkProperties.screenshotonSuccess()) {
+					attachScreenshot(node, Status.PASS);
+				}
 			}
 		} catch (Exception e) {
 			System.out.println("executionResult() Failed !!");
@@ -300,6 +345,39 @@ public class TestEngine {
 		}
 		var driver = TestContextManager.getContext().getDriverContext().getDriver();
 		try {
+			File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+			BufferedImage original = ImageIO.read(src);
+			double scaleFactor = 1.0;
+
+			int width = (int) (original.getWidth() * scaleFactor);
+			int height = (int) (original.getHeight() * scaleFactor);
+
+			BufferedImage resized = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+			Graphics2D g = resized.createGraphics();
+
+			// Apply bilinear interpolation for smoother scaling
+			g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+			g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+			g.drawImage(original, 0, 0, width, height, null);
+			g.dispose();
+
+			// Convert to base64
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ImageIO.write(resized, "jpg", baos); // Use "jpg" for smaller size
+			String srcFile = Base64.getEncoder().encodeToString(baos.toByteArray());
+
+			node.log(status, "Exceution Complete");
+			node.addScreenCaptureFromBase64String(srcFile);
+		} catch (Exception e) {
+			node.warning("Attaching Screenshot failed: " + e.getMessage());
+		}
+	}
+
+	private static void attachScreenshot(ExtentTest node) {
+		var driver = TestContextManager.getContext().getDriverContext().getDriver();
+		try {
 			String srcFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BASE64);
 			node.addScreenCaptureFromBase64String(srcFile);
 		} catch (Exception e) {
@@ -311,6 +389,8 @@ public class TestEngine {
 		StringBuilder sb = new StringBuilder();
 		for (StackTraceElement trace : stackTraceElements) {
 			if (trace.getClassName().contains("com.trgan")) {
+				sb.append("at ").append(trace.getClassName()).append(".").append(trace.getMethodName()).append("(")
+						.append(trace.getFileName()).append(":").append(trace.getLineNumber()).append(")").append("\n");
 				sb.append("at ").append(trace.getClassName()).append(".").append(trace.getMethodName()).append("(")
 						.append(trace.getFileName()).append(":").append(trace.getLineNumber()).append(")").append("\n");
 			}
