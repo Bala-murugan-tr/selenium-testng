@@ -1,11 +1,21 @@
 package com.trgan.framework.engine;
 
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+<<<<<<< HEAD
+=======
+import java.util.Base64;
+>>>>>>> c185ebe (Added Custom HTML Report and Enhanced Screenshot Size Optimization)
 import java.util.Map;
+
+import javax.imageio.ImageIO;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.openqa.selenium.OutputType;
@@ -39,6 +49,8 @@ import com.trgan.framework.context.TestContext;
 import com.trgan.framework.context.TestContextManager;
 import com.trgan.framework.enums.BrowserType;
 import com.trgan.framework.factory.BrowserFactory;
+import com.trgan.framework.reporter.HtmlBuilder;
+import com.trgan.framework.reporter.ResultStatus;
 import com.trgan.framework.utils.ExcelReader;
 import com.trgan.framework.utils.TestLogger;
 
@@ -116,7 +128,7 @@ public class TestEngine {
 			logger.log("TESTCASE INITIATED: " + testClassName);
 			var meta = createMetaData(group, testClassName, startTime);
 			logger.log("METADATA : " + meta.toString());
-			createReports(testClassName, logger);
+			createReports(group, testClassName, logger);
 			readExcel();
 			var browser = FrameworkProperties.getExecutionBrowser();
 			var driver = createDriver(browser);
@@ -162,10 +174,18 @@ public class TestEngine {
 
 	private void initConsolidatedReport(String group, String suiteName) {
 		String dir = FrameworkProperties.getReportDir() + File.separator + suiteName + "_ConsolidatedReport.html";
+<<<<<<< HEAD
 		ExtentSparkReporter reporter = new ExtentSparkReporter(dir).viewConfigurer().viewOrder()
 				.as(new ViewName[] { ViewName.DASHBOARD, ViewName.TEST }).apply();
 		ExtentSparkReporter reporter = new ExtentSparkReporter(dir).viewConfigurer().viewOrder()
 				.as(new ViewName[] { ViewName.DASHBOARD, ViewName.TEST }).apply();
+=======
+		ExtentSparkReporter reporter = new ExtentSparkReporter(dir)
+				.viewConfigurer()
+				.viewOrder()
+				.as(new ViewName[] { ViewName.DASHBOARD, ViewName.TEST })
+				.apply();
+>>>>>>> c185ebe (Added Custom HTML Report and Enhanced Screenshot Size Optimization)
 		reporter.config().setReportName("TRGAN " + suiteName + " Suite Summary");
 
 		consolidatedReport = new ExtentReports();
@@ -189,7 +209,7 @@ public class TestEngine {
 		return meta;
 	}
 
-	private void createReports(String testClassName, TestLogger logger) {
+	private void createReports(String group, String testClassName, TestLogger logger) {
 		var reportDir = FrameworkProperties.getReportDir() + File.separator + testClassName;
 		var userPath = System.getProperty("user.dir");
 		logger.log("REPORT PATH : " + userPath + File.separator + reportDir);
@@ -203,6 +223,10 @@ public class TestEngine {
 		var globalTest = createGlobalTest(testClassName);
 		ReportContext reportCtx = new ReportContext(individualExtent, globalTest, test, logger, reportDir);
 		reportCtx.getResultData().testCase = testClassName;
+<<<<<<< HEAD
+=======
+		reportCtx.getResultData().group = group;
+>>>>>>> c185ebe (Added Custom HTML Report and Enhanced Screenshot Size Optimization)
 		TestContextManager.getContext().setReportContext(reportCtx);
 	}
 
@@ -231,7 +255,9 @@ public class TestEngine {
 		try {
 			var rtx = TestContextManager.getContext().getReportContext();
 			var globalTest = rtx.getGlobalTest();
+			var individualTest = rtx.getIndividualTest();
 			var node = rtx.getNode();
+<<<<<<< HEAD
 			switch (result.getStatus()) {
 			case ITestResult.SUCCESS:
 				attachStatus("PASS");
@@ -261,15 +287,25 @@ public class TestEngine {
 						+ testClassName + "</a>", ExtentColor.GREY));
 				break;
 			}
+=======
+
+>>>>>>> c185ebe (Added Custom HTML Report and Enhanced Screenshot Size Optimization)
 			if (result.getStatus() != ITestResult.SUCCESS) {
 				Throwable root = ExceptionUtils.getRootCause(result.getThrowable());
 				StringBuilder refined = new StringBuilder("❌ Exception Location:<br>");
 				for (StackTraceElement el : root.getStackTrace()) {
 					if (el.getClassName().startsWith("com.trgan")) {
+<<<<<<< HEAD
 						refined.append(String.format("↳ %s.%s():%d<br>", el.getClassName(), el.getMethodName(),
 								el.getLineNumber()));
 						refined.append(String.format("↳ %s.%s():%d<br>", el.getClassName(), el.getMethodName(),
 								el.getLineNumber()));
+=======
+						refined
+								.append(String
+										.format("↳ %s.%s():%d<br>", el.getClassName(), el.getMethodName(),
+												el.getLineNumber()));
+>>>>>>> c185ebe (Added Custom HTML Report and Enhanced Screenshot Size Optimization)
 					}
 				}
 				var trace = refineStackTrace(root.getStackTrace());
@@ -289,9 +325,17 @@ public class TestEngine {
 					} else {
 						individualTest.fail(exceptionName + " | " + exceptionMessage + " | ");
 					}
+<<<<<<< HEAD
 					globalTest.fail(MarkupHelper.createLabel("<a href='." + reportPath
 							+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
 							+ testClassName + "</a>", ExtentColor.RED));
+=======
+					globalTest
+							.fail(MarkupHelper
+									.createLabel("<a href='." + reportPath
+											+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
+											+ testClassName + "</a>", ExtentColor.RED));
+>>>>>>> c185ebe (Added Custom HTML Report and Enhanced Screenshot Size Optimization)
 					if (FrameworkProperties.screenshotonFailure()) {
 						attachScreenshot(node, Status.FAIL);
 					}
@@ -304,9 +348,17 @@ public class TestEngine {
 					} else {
 						individualTest.skip(exceptionName + " | " + exceptionMessage + " | ");
 					}
+<<<<<<< HEAD
 					globalTest.skip(MarkupHelper.createLabel("<a href='." + reportPath
 							+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
 							+ testClassName + "</a>", ExtentColor.GREY));
+=======
+					globalTest
+							.skip(MarkupHelper
+									.createLabel("<a href='." + reportPath
+											+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
+											+ testClassName + "</a>", ExtentColor.GREY));
+>>>>>>> c185ebe (Added Custom HTML Report and Enhanced Screenshot Size Optimization)
 					if (FrameworkProperties.screenshotonFailure()) {
 						attachScreenshot(node, Status.SKIP);
 					}
@@ -317,9 +369,17 @@ public class TestEngine {
 			} else {
 				attachStatus("PASS");
 				html.addIndividualReport(testClassName, reportPath, "", "PASS");
+<<<<<<< HEAD
 				globalTest.pass(MarkupHelper.createLabel("<a href='." + reportPath
 						+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
 						+ testClassName + "</a>", ExtentColor.GREEN));
+=======
+				globalTest
+						.pass(MarkupHelper
+								.createLabel("<a href='." + reportPath
+										+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
+										+ testClassName + "</a>", ExtentColor.GREEN));
+>>>>>>> c185ebe (Added Custom HTML Report and Enhanced Screenshot Size Optimization)
 				if (FrameworkProperties.screenshotonSuccess()) {
 					attachScreenshot(node, Status.PASS);
 				}
@@ -339,7 +399,8 @@ public class TestEngine {
 	 * @param node The ExtentTest node to which the screenshot will be attached.
 	 * @throws ContextException if the node is null or screenshot capture fails.
 	 */
-	private static void attachScreenshot(ExtentTest node) {
+	private static void attachScreenshot(ExtentTest node, Status status) {
+
 		if (node == null) {
 			throw new ContextException("Node is null, please make sure 'createNode' function is called atleast once");
 		}
@@ -347,10 +408,17 @@ public class TestEngine {
 		try {
 			File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
 			BufferedImage original = ImageIO.read(src);
+<<<<<<< HEAD
 			double scaleFactor = 1.0;
 
 			int width = (int) (original.getWidth() * scaleFactor);
 			int height = (int) (original.getHeight() * scaleFactor);
+=======
+			double scaleFactor = 1.0; 
+
+			int width = (int)(original.getWidth() * scaleFactor);
+			int height = (int)(original.getHeight() * scaleFactor);
+>>>>>>> c185ebe (Added Custom HTML Report and Enhanced Screenshot Size Optimization)
 
 			BufferedImage resized = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 			Graphics2D g = resized.createGraphics();
@@ -389,10 +457,24 @@ public class TestEngine {
 		StringBuilder sb = new StringBuilder();
 		for (StackTraceElement trace : stackTraceElements) {
 			if (trace.getClassName().contains("com.trgan")) {
+<<<<<<< HEAD
 				sb.append("at ").append(trace.getClassName()).append(".").append(trace.getMethodName()).append("(")
 						.append(trace.getFileName()).append(":").append(trace.getLineNumber()).append(")").append("\n");
 				sb.append("at ").append(trace.getClassName()).append(".").append(trace.getMethodName()).append("(")
 						.append(trace.getFileName()).append(":").append(trace.getLineNumber()).append(")").append("\n");
+=======
+				sb
+						.append("at ")
+						.append(trace.getClassName())
+						.append(".")
+						.append(trace.getMethodName())
+						.append("(")
+						.append(trace.getFileName())
+						.append(":")
+						.append(trace.getLineNumber())
+						.append(")")
+						.append("\n");
+>>>>>>> c185ebe (Added Custom HTML Report and Enhanced Screenshot Size Optimization)
 			}
 		}
 		return sb + "";

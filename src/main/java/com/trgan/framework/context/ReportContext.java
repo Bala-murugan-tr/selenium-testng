@@ -2,7 +2,11 @@ package com.trgan.framework.context;
 
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
+<<<<<<< HEAD
 import com.trgan.base.ResultData;
+=======
+import com.trgan.framework.reporter.ResultData;
+>>>>>>> c185ebe (Added Custom HTML Report and Enhanced Screenshot Size Optimization)
 import com.trgan.framework.utils.TestLogger;
 
 /**
