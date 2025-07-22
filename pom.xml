@@ -5,7 +5,7 @@
   <groupId>com.selenium.testing</groupId>
   <artifactId>selenium-testng</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>selenium-testng-extentreport</name>
+  <name>selenium-testng</name>
   <!-- Build configuration for CLI/Pipeline runs-->
   <build>
   <plugins>
