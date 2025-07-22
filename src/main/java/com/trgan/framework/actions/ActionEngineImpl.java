@@ -1,11 +1,18 @@
 package com.trgan.framework.actions;
 
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.Base64;
+
+import javax.imageio.ImageIO;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -93,9 +100,35 @@ public class ActionEngineImpl implements IActionEngine {
 
 	@Override
 	public void saveScreenshot() {
-		String srcFile = ((TakesScreenshot) driver()).getScreenshotAs(OutputType.BASE64);
+		try {
+		File src = ((TakesScreenshot) driver()).getScreenshotAs(OutputType.FILE);
+		BufferedImage original;
+			original = ImageIO.read(src);
+		double scaleFactor = 1.0; 
+
+		int width = (int)(original.getWidth() * scaleFactor);
+		int height = (int)(original.getHeight() * scaleFactor);
+
+		BufferedImage resized = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		Graphics2D g = resized.createGraphics();
+
+		// Apply bilinear interpolation for smoother scaling
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+		g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+		g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+		g.drawImage(original, 0, 0, width, height, null);
+		g.dispose();
+
+		// Convert to base64
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ImageIO.write(resized, "jpg", baos); // Use "jpg" for smaller size
+		String srcFile = Base64.getEncoder().encodeToString(baos.toByteArray());
 		TestContextManager.getContext().getReportContext().getIndividualTest()
 				.addScreenCaptureFromBase64String(srcFile);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
