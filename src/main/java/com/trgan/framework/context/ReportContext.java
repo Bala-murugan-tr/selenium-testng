@@ -2,6 +2,7 @@ package com.trgan.framework.context;
 
 import com.aventstack.extentreports.ExtentReports;
 import com.aventstack.extentreports.ExtentTest;
+import com.trgan.framework.reporter.ResultData;
 import com.trgan.framework.utils.TestLogger;
 
 /**
@@ -14,6 +15,7 @@ public class ReportContext {
 	private ExtentTest node;
 	private TestLogger logger;
 	private String reportDir;
+	private ResultData resultData;
 
 	public ReportContext(ExtentReports individualExtent, ExtentTest globalTest, ExtentTest individualTest,
 			TestLogger logger, String reportDir) {
@@ -22,6 +24,7 @@ public class ReportContext {
 		this.individualTest = individualTest;
 		this.logger = logger;
 		this.reportDir = reportDir;
+		this.resultData = new ResultData();
 	}
 
 	public ExtentReports getIndividualExtent() {
@@ -70,6 +73,10 @@ public class ReportContext {
 
 	public void setReportDir(String reportDir) {
 		this.reportDir = reportDir;
+	}
+
+	public ResultData getResultData() {
+		return this.resultData;
 	}
 
 }

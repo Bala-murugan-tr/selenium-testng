@@ -1,5 +1,7 @@
 package com.trgan.framework.context;
 
+import java.time.LocalTime;
+
 import com.trgan.framework.enums.BrowserType;
 import com.trgan.framework.enums.EnvironmentType;
 
@@ -12,14 +14,20 @@ public class MetaData {
 	private String buildId;
 	private String testGroup;
 	private String testClassName;
+	private LocalTime startTime;
 
 	public MetaData(BrowserType browser, EnvironmentType environment, String buildId, String testGroup,
-			String testClassName) {
+			String testClassName, LocalTime startTime) {
 		this.browser = browser;
 		this.environment = environment;
 		this.buildId = buildId;
 		this.testGroup = testGroup;
 		this.testClassName = testClassName;
+		this.startTime = startTime;
+	}
+
+	public LocalTime getStartTime() {
+		return startTime;
 	}
 
 	public BrowserType getBrowser() {

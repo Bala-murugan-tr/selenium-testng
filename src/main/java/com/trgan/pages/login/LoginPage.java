@@ -29,6 +29,35 @@ public class LoginPage extends TestBase {
 		logger.log("login successful");
 	}
 
+	public void addResults() {
+		resultData.quoteId = "99999";
+		resultData.policyId = "44444";
+		resultData.premium = "1200";
+		resultData.date = "07-0-2025";
+		resultData.time = "07:30 PM";
+//
+//		HtmlBuilder builder = new HtmlBuilder();
+//
+//		// set q1 data...
+//
+//		builder.addRecord(resultData);
+//		builder.addRecord(resultData);
+//
+//		// Repeat for others...
+//
+//		builder.generateReport("target/custom-report.html");
+
+	}
+
 	public void logoutFromApplication() {
+		resultData.quoteId = "77777";
+		resultData.policyId = "33333";
+		resultData.premium = "1990";
+		try {
+			Thread.sleep(5000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

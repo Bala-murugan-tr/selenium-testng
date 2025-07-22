@@ -79,4 +79,22 @@ public final class EnvironmentProperties {
 		throw new IllegalArgumentException(key + " not provided");
 	}
 
+	private String getProperty(String key, String defaultValue) {
+		String sys = System.getProperty(key);
+		if (sys != null && !sys.isBlank()) {
+			return sys;
+		}
+
+		String cfg = properties.getProperty(key);
+		if (cfg != null && !cfg.isBlank()) {
+			return cfg;
+		}
+
+		return defaultValue;
+	}
+
+	public String getExecutor() {
+		return getProperty("executorName", "Automation Tester");
+	}
+
 }

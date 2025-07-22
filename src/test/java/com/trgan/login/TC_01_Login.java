@@ -11,6 +11,7 @@ public class TC_01_Login extends TestEngine {
 	public void tc_01_login() {
 		LoginPage lp = new LoginPage();
 		createNode("Login");
+		lp.addResults();
 		lp.loginToApplication();
 		createNode("Login success");
 		createNode("HomePage");

@@ -5,6 +5,8 @@
   	<test thread-count="2" parallel="classes" name="Test">
     	<classes>
 			<class name="com.trgan.login.TC_01_Login" />
+			<class name="com.trgan.login.TC_02_Home" />
+			<class name="com.trgan.home.TC01_HomePage" />
     	</classes>
   	</test> 
 </suite>

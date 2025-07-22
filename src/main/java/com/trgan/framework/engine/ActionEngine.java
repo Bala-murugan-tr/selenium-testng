@@ -13,6 +13,7 @@ import com.trgan.framework.context.TestContext;
 import com.trgan.framework.context.TestContextManager;
 import com.trgan.framework.factory.RetryProxyFactory;
 import com.trgan.framework.interfaces.IActionEngine;
+import com.trgan.framework.reporter.ResultData;
 import com.trgan.framework.utils.ExcelReader;
 import com.trgan.framework.utils.TestLogger;
 
@@ -29,6 +30,7 @@ public class ActionEngine {
 	protected final EnvironmentProperties executionProps = TestEngine.environmentProps;
 	protected final TestLogger logger = TestContextManager.getLogger();
 	protected final WebDriver driver = TestContextManager.getContext().getDriverContext().getDriver();
+	protected final ResultData resultData = TestContextManager.getContext().getReportContext().getResultData();
 
 	public ActionEngine() {
 		int maxAttempts = FrameworkProperties.retryMaxAttempt();
