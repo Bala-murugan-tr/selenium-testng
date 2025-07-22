@@ -13,6 +13,7 @@ import com.trgan.framework.config.FrameworkProperties;
 
 public class TestLogger {
 	private final Path filePath;
+	private final StringBuffer buffer = new StringBuffer();
 
 	/**
 	 * Create a log file for the current test
@@ -35,13 +36,18 @@ public class TestLogger {
 	 * 
 	 * @param message
 	 */
-	public void log(String message) {
+	public synchronized void log(String message) {
+		String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+		buffer.append('[').append(timestamp).append("]- ").append(message).append(System.lineSeparator());
+	}
+
+	/** Call this once per test to write all buffered lines in one I/O. */
+	public void flush() {
 		try {
-			String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-			String line = "[" + timestamp + "]- " + message + System.lineSeparator();
-			Files.write(filePath, line.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+			Files.writeString(filePath, buffer.toString(), StandardOpenOption.CREATE,
+					StandardOpenOption.TRUNCATE_EXISTING);
 		} catch (IOException e) {
-			System.err.println("Log write failed: " + e.getMessage());
+			System.err.println("Log flush failed: " + e.getMessage());
 		}
 	}
 }

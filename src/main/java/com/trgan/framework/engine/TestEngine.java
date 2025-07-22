@@ -33,6 +33,8 @@ import com.aventstack.extentreports.markuputils.ExtentColor;
 import com.aventstack.extentreports.markuputils.MarkupHelper;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 import com.aventstack.extentreports.reporter.configuration.ViewName;
+import com.trgan.base.HtmlBuilder;
+import com.trgan.base.ResultStatus;
 import com.trgan.exceptions.ContextException;
 import com.trgan.framework.config.EnvironmentProperties;
 import com.trgan.framework.config.FrameworkProperties;
@@ -148,6 +150,7 @@ public class TestEngine {
 			executionResult(result, method.getDeclaringClass().getSimpleName());
 			flushReport();
 			quitBrowser();
+			TestContextManager.getContext().getReportContext().getLogger().flush();
 			TestContextManager.removeContext();
 		} catch (Exception e) {
 			System.out.println("TestEngine.tearDownMethod() Failed !!");
@@ -241,7 +244,6 @@ public class TestEngine {
 			var globalTest = rtx.getGlobalTest();
 			var individualTest = rtx.getIndividualTest();
 			var node = rtx.getNode();
-
 			if (result.getStatus() != ITestResult.SUCCESS) {
 				Throwable root = ExceptionUtils.getRootCause(result.getThrowable());
 				StringBuilder refined = new StringBuilder("❌ Exception Location:<br>");
@@ -339,6 +341,7 @@ public class TestEngine {
 
 			int width = (int)(original.getWidth() * scaleFactor);
 			int height = (int)(original.getHeight() * scaleFactor);
+
 
 			BufferedImage resized = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 			Graphics2D g = resized.createGraphics();

@@ -4,11 +4,13 @@ import java.util.Map;
 
 import org.openqa.selenium.WebDriver;
 
+import com.trgan.base.ResultData;
 import com.trgan.exceptions.ContextException;
 import com.trgan.framework.actions.ActionEngineImpl;
 import com.trgan.framework.config.EnvironmentProperties;
 import com.trgan.framework.config.FrameworkProperties;
 import com.trgan.framework.context.ExcelContext;
+import com.trgan.framework.context.MetaData;
 import com.trgan.framework.context.TestContext;
 import com.trgan.framework.context.TestContextManager;
 import com.trgan.framework.factory.RetryProxyFactory;
@@ -31,6 +33,9 @@ public class ActionEngine {
 	protected final TestLogger logger = TestContextManager.getLogger();
 	protected final WebDriver driver = TestContextManager.getContext().getDriverContext().getDriver();
 	protected final ResultData resultData = TestContextManager.getContext().getReportContext().getResultData();
+
+	protected final MetaData metaData = TestContextManager.getContext().getMetaData();
+
 
 	public ActionEngine() {
 		int maxAttempts = FrameworkProperties.retryMaxAttempt();
