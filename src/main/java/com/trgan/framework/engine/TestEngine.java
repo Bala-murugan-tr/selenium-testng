@@ -11,6 +11,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.imageio.ImageIO;
 
@@ -33,8 +34,6 @@ import com.aventstack.extentreports.markuputils.ExtentColor;
 import com.aventstack.extentreports.markuputils.MarkupHelper;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 import com.aventstack.extentreports.reporter.configuration.ViewName;
-import com.trgan.base.HtmlBuilder;
-import com.trgan.base.ResultStatus;
 import com.trgan.exceptions.ContextException;
 import com.trgan.framework.config.EnvironmentProperties;
 import com.trgan.framework.config.FrameworkProperties;
@@ -62,17 +61,19 @@ import com.trgan.framework.utils.TestLogger;
 public class TestEngine {
 
 	public static EnvironmentProperties environmentProps;
-	public static FrameworkProperties frameworkProps;
+//	public static FrameworkProperties frameworkProps;
 	private static ExtentReports consolidatedReport;
 
 	public static HtmlBuilder html = new HtmlBuilder();
+
+	private static Map<String, Integer> executionCount = new ConcurrentHashMap<>();
 
 	/**
 	 * Used to create a new test node in current extent-test for logging. On each
 	 * new node creation a screenshot of current driver state will be attached to
 	 * the previous node, if {@linkplain screenshotOnNodes } property is set to
 	 * true.
-	 * 
+	 *
 	 * @param title - title of the node
 	 */
 
@@ -97,7 +98,7 @@ public class TestEngine {
 		String suiteName = suiteContext.getSuite().getName();
 		try {
 			environmentProps = EnvironmentProperties.load("environment.properties");
-			frameworkProps = FrameworkProperties.load("framework.properties");
+//			frameworkProps = FrameworkProperties.load("framework.properties");
 			initConsolidatedReport(group, suiteName);
 		} catch (Exception e) {
 			System.err.println("TestEngine.beforeSuite() Failed !!");
@@ -114,18 +115,29 @@ public class TestEngine {
 	 */
 	@Parameters({ "group" })
 	@BeforeMethod
-	public void setupMethod(String group, Method method) {
+	public void setupMethod(String group, Method method, ITestResult result) {
 		try {
 			var startTime = LocalTime.now();
 			// Initialize an empty TestContext and register to TestContextManager
 			TestContext ctx = new TestContext(null, null, null, null);
 			TestContextManager.setContext(ctx);
 			var testClassName = method.getDeclaringClass().getSimpleName();
-			var logger = createLogger(testClassName);
+			var outputFileName = testClassName;
+			var reportFilePath = FrameworkProperties.getReportDir() + File.separator + testClassName + File.separator;
+			if (!executionCount.containsKey(testClassName)) {
+				executionCount.put(testClassName, 1);
+			} else {
+				var count = executionCount.get(testClassName);
+				outputFileName = testClassName + "_Retry_" + count;
+				executionCount.put(testClassName, count + 1);
+			}
+			System.out.println(executionCount.toString());
+			System.out.println(outputFileName);
+			var logger = createLogger(reportFilePath + outputFileName);
 			logger.log("TESTCASE INITIATED: " + testClassName);
 			var meta = createMetaData(group, testClassName, startTime);
 			logger.log("METADATA : " + meta.toString());
-			createReports(group, testClassName, logger);
+			createReports(group, outputFileName, logger);
 			readExcel();
 			var browser = FrameworkProperties.getExecutionBrowser();
 			var driver = createDriver(browser);
@@ -171,11 +183,8 @@ public class TestEngine {
 
 	private void initConsolidatedReport(String group, String suiteName) {
 		String dir = FrameworkProperties.getReportDir() + File.separator + suiteName + "_ConsolidatedReport.html";
-		ExtentSparkReporter reporter = new ExtentSparkReporter(dir)
-				.viewConfigurer()
-				.viewOrder()
-				.as(new ViewName[] { ViewName.DASHBOARD, ViewName.TEST })
-				.apply();
+		ExtentSparkReporter reporter = new ExtentSparkReporter(dir).viewConfigurer().viewOrder()
+				.as(new ViewName[] { ViewName.DASHBOARD, ViewName.TEST }).apply();
 		reporter.config().setReportName("TRGAN " + suiteName + " Suite Summary");
 
 		consolidatedReport = new ExtentReports();
@@ -186,8 +195,8 @@ public class TestEngine {
 		consolidatedReport.setSystemInfo("Group", group);
 	}
 
-	private TestLogger createLogger(String testClassName) {
-		return new TestLogger(testClassName);
+	private TestLogger createLogger(String path) {
+		return new TestLogger(path);
 	}
 
 	private MetaData createMetaData(String group, String testClassName, LocalTime startTime) {
@@ -200,10 +209,10 @@ public class TestEngine {
 	}
 
 	private void createReports(String group, String testClassName, TestLogger logger) {
-		var reportDir = FrameworkProperties.getReportDir() + File.separator + testClassName;
+		var reportDir = FrameworkProperties.getReportDir() + File.separator + testClassName.split("_Retry_")[0];
 		var userPath = System.getProperty("user.dir");
 		logger.log("REPORT PATH : " + userPath + File.separator + reportDir);
-		var extentReportPath = reportDir + File.separator + "Extent_" + testClassName + ".html";
+		String extentReportPath = reportDir + File.separator + "Extent_" + testClassName + ".html";
 		var individualReporter = new ExtentSparkReporter(extentReportPath);
 		individualReporter.config().thumbnailForBase64(true).setDocumentTitle("REPORT FOR : " + testClassName);
 		var individualExtent = new ExtentReports();
@@ -212,7 +221,7 @@ public class TestEngine {
 		logger.log("EXTENT REPORT CREATED : " + userPath + File.separator + extentReportPath);
 		var globalTest = createGlobalTest(testClassName);
 		ReportContext reportCtx = new ReportContext(individualExtent, globalTest, test, logger, reportDir);
-		reportCtx.getResultData().testCase = testClassName;
+		reportCtx.getResultData().testCase = testClassName.split("_Retry_")[0];
 		reportCtx.getResultData().group = group;
 		TestContextManager.getContext().setReportContext(reportCtx);
 	}
@@ -238,7 +247,11 @@ public class TestEngine {
 	}
 
 	private void executionResult(ITestResult result, String testClassName) {
-		var reportPath = File.separator + testClassName + File.separator + "Extent_" + testClassName + ".html";
+		var outputFileName = testClassName;
+		if (executionCount.get(testClassName) != 1) {
+			outputFileName = testClassName + "_Retry_" + (executionCount.get(testClassName) - 1);
+		}
+		var reportPath = File.separator + testClassName + File.separator + "Extent_" + outputFileName + ".html";
 		try {
 			var rtx = TestContextManager.getContext().getReportContext();
 			var globalTest = rtx.getGlobalTest();
@@ -249,10 +262,8 @@ public class TestEngine {
 				StringBuilder refined = new StringBuilder("❌ Exception Location:<br>");
 				for (StackTraceElement el : root.getStackTrace()) {
 					if (el.getClassName().startsWith("com.trgan")) {
-						refined
-								.append(String
-										.format("↳ %s.%s():%d<br>", el.getClassName(), el.getMethodName(),
-												el.getLineNumber()));
+						refined.append(String.format("↳ %s.%s():%d<br>", el.getClassName(), el.getMethodName(),
+								el.getLineNumber()));
 					}
 				}
 				var trace = refineStackTrace(root.getStackTrace());
@@ -266,34 +277,32 @@ public class TestEngine {
 
 				case ITestResult.FAILURE:
 					attachStatus("FAIL");
-					html.addIndividualReport(testClassName, reportPath, exceptionMessage, "FAIL");
+					html.addIndividualReport(testClassName, executionCount.get(testClassName), reportPath,
+							exceptionMessage, "FAIL");
 					if (node != null) {
 						node.fail(exceptionName + " | " + exceptionMessage + " | ");
 					} else {
 						individualTest.fail(exceptionName + " | " + exceptionMessage + " | ");
 					}
-					globalTest
-							.fail(MarkupHelper
-									.createLabel("<a href='." + reportPath
-											+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
-											+ testClassName + "</a>", ExtentColor.RED));
+					globalTest.fail(MarkupHelper.createLabel("<a href='." + reportPath
+							+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
+							+ testClassName + "</a>", ExtentColor.RED));
 					if (FrameworkProperties.screenshotonFailure()) {
 						attachScreenshot(node, Status.FAIL);
 					}
 					break;
 				case ITestResult.SKIP:
 					attachStatus("SKIP");
-					html.addIndividualReport(testClassName, reportPath, exceptionMessage, "SKIP");
+					html.addIndividualReport(testClassName, executionCount.get(testClassName), reportPath,
+							exceptionMessage, "SKIP");
 					if (node != null) {
 						node.skip(exceptionName + " | " + exceptionMessage + " | ");
 					} else {
 						individualTest.skip(exceptionName + " | " + exceptionMessage + " | ");
 					}
-					globalTest
-							.skip(MarkupHelper
-									.createLabel("<a href='." + reportPath
-											+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
-											+ testClassName + "</a>", ExtentColor.GREY));
+					globalTest.skip(MarkupHelper.createLabel("<a href='." + reportPath
+							+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
+							+ testClassName + "</a>", ExtentColor.ORANGE));
 					if (FrameworkProperties.screenshotonFailure()) {
 						attachScreenshot(node, Status.SKIP);
 					}
@@ -303,12 +312,10 @@ public class TestEngine {
 				TestContextManager.getLogger().log("TEST RESULT UPDATED TO REPORTS");
 			} else {
 				attachStatus("PASS");
-				html.addIndividualReport(testClassName, reportPath, "", "PASS");
-				globalTest
-						.pass(MarkupHelper
-								.createLabel("<a href='." + reportPath
-										+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
-										+ testClassName + "</a>", ExtentColor.GREEN));
+				html.addIndividualReport(testClassName, executionCount.get(testClassName), reportPath, "", "PASS");
+				globalTest.pass(MarkupHelper.createLabel("<a href='." + reportPath
+						+ "' target='_blank' style='color:inherit; text-decoration:none;'>📄 View Detailed Report : "
+						+ testClassName + "</a>", ExtentColor.GREEN));
 				if (FrameworkProperties.screenshotonSuccess()) {
 					attachScreenshot(node, Status.PASS);
 				}
@@ -337,11 +344,10 @@ public class TestEngine {
 		try {
 			File src = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
 			BufferedImage original = ImageIO.read(src);
-			double scaleFactor = 1.0; 
+			double scaleFactor = 1.0;
 
-			int width = (int)(original.getWidth() * scaleFactor);
-			int height = (int)(original.getHeight() * scaleFactor);
-
+			int width = (int) (original.getWidth() * scaleFactor);
+			int height = (int) (original.getHeight() * scaleFactor);
 
 			BufferedImage resized = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 			Graphics2D g = resized.createGraphics();
@@ -380,17 +386,8 @@ public class TestEngine {
 		StringBuilder sb = new StringBuilder();
 		for (StackTraceElement trace : stackTraceElements) {
 			if (trace.getClassName().contains("com.trgan")) {
-				sb
-						.append("at ")
-						.append(trace.getClassName())
-						.append(".")
-						.append(trace.getMethodName())
-						.append("(")
-						.append(trace.getFileName())
-						.append(":")
-						.append(trace.getLineNumber())
-						.append(")")
-						.append("\n");
+				sb.append("at ").append(trace.getClassName()).append(".").append(trace.getMethodName()).append("(")
+						.append(trace.getFileName()).append(":").append(trace.getLineNumber()).append(")").append("\n");
 			}
 		}
 		return sb + "";

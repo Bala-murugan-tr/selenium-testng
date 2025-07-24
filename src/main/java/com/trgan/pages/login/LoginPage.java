@@ -29,8 +29,11 @@ public class LoginPage extends TestBase {
 		logger.log("login successful");
 	}
 
+	static int quoteId = 12121;
+
 	public void addResults() {
-		resultData.quoteId = "99999";
+		quoteId++;
+		resultData.quoteId = "" + quoteId;
 		resultData.policyId = "44444";
 		resultData.premium = "1200";
 		resultData.date = "07-0-2025";

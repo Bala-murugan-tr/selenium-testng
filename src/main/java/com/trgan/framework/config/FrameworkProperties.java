@@ -1,7 +1,6 @@
 package com.trgan.framework.config;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -11,7 +10,7 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-import com.trgan.exceptions.ContextException;
+import com.trgan.exceptions.ConfigException;
 import com.trgan.framework.enums.BrowserType;
 import com.trgan.framework.enums.DataStrategy;
 import com.trgan.framework.enums.ExecutionMode;
@@ -22,36 +21,32 @@ import com.trgan.framework.enums.ExecutionMode;
 public final class FrameworkProperties {
 	private static final Properties framework = new Properties();
 
-//	static {
-//		try (InputStream input = FrameworkProperties.class.getClassLoader()
-//				.getResourceAsStream("framework.properties")) {
-//			framework.load(input);
-//		} catch (IOException ignored) {
-//			System.out.println("no config framework.properties");
+	private static final String filename = "framework.properties";
+
+	static {
+		try (InputStream fis = FrameworkProperties.class.getClassLoader().getResourceAsStream(filename)) {
+			if (fis == null) {
+				throw new ConfigException("Config file not found: " + filename);
+			}
+			framework.load(fis);
+		} catch (IOException e) {
+			throw new ConfigException("Failed to load " + filename + ": " + e.getMessage());
+		}
+	}
+
+//	/**
+//	 * Loads the property file from {@linkplain path src/main/resources} folder
+//	 *
+//	 * @param filename - filename with extension eg: framework.properties
+//	 * @throws IOException
+//	 */
+//	public static FrameworkProperties load(String filename) {
+//		try {
+//			return new FrameworkProperties(filename);
+//		} catch (IOException e) {
+//			throw new ConfigException("Failed to load " + filename + " " + e.getMessage());
 //		}
 //	}
-
-	public FrameworkProperties(String filenameWithExtension) throws IOException {
-		InputStream fis = getClass().getClassLoader().getResourceAsStream(filenameWithExtension);
-		if (fis == null) {
-			throw new FileNotFoundException("Config file not found: " + filenameWithExtension);
-		}
-		framework.load(fis);
-	}
-
-	/**
-	 * Loads the property file from {@linkplain path src/main/resources} folder
-	 * 
-	 * @param filename - filename with extension eg: framework.properties
-	 * @throws IOException
-	 */
-	public static FrameworkProperties load(String filename) {
-		try {
-			return new FrameworkProperties(filename);
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to load " + filename + " " + e.getMessage());
-		}
-	}
 
 //*****************************Folder Paths****************************************************************************//
 	public static String getArtifactsDir() {
@@ -110,6 +105,32 @@ public final class FrameworkProperties {
 		return Integer.parseInt(System.getProperty("retry.delayMs", framework.getProperty("retry.delayMs", "500")));
 	}
 
+	public static boolean retryTest() {
+		var x = System.getProperty("retry.test");
+		var y = framework.getProperty("retry.test");
+		return Boolean.parseBoolean(System.getProperty("retry.test", framework.getProperty("retry.test", "false")));
+
+	}
+
+	public static int retryTestMaxAttempt() {
+		return Integer.parseInt(
+				System.getProperty("retry.test.maxAttempts", framework.getProperty("retry.test.maxAttempts", "2")));
+	}
+
+	// *****************************Retry Strategy
+	// *************************************************************************//
+	public static int getWait() {
+		return Integer.parseInt(System.getProperty("retry.maxAttempts", framework.getProperty("wait.wait", "20")));
+	}
+
+	public static int shortWait() {
+		return Integer.parseInt(System.getProperty("retry.maxAttempts", framework.getProperty("wait.shortWait", "20")));
+	}
+
+	public static int longWait() {
+		return Integer.parseInt(System.getProperty("retry.maxAttempts", framework.getProperty("wait.longWait", "120")));
+	}
+
 //*****************************Screenshot Options *********************************************************************//
 	public static boolean screenshotOnNodes() {
 		return Boolean.parseBoolean(
@@ -132,7 +153,7 @@ public final class FrameworkProperties {
 		try {
 			return new URI(uri).toURL();
 		} catch (MalformedURLException | URISyntaxException e) {
-			throw new ContextException("URL invalid :" + uri);
+			throw new ConfigException("URL invalid :" + uri);
 		}
 	}
 
@@ -147,7 +168,7 @@ public final class FrameworkProperties {
 			return cfg.trim();
 		}
 
-		throw new IllegalArgumentException(key + " not set in Framework.properties");
+		throw new ConfigException(key + " not set in Framework.properties");
 	}
 
 	private static String getProperty(String key, String defaultValue) {

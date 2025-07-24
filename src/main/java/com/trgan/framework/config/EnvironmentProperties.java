@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import com.trgan.exceptions.ConfigException;
 import com.trgan.framework.enums.EnvironmentType;
 
 /**
@@ -17,7 +18,7 @@ public final class EnvironmentProperties {
 	public EnvironmentProperties(String filenameWithExtension) throws IOException {
 		InputStream fis = getClass().getClassLoader().getResourceAsStream(filenameWithExtension);
 		if (fis == null) {
-			throw new FileNotFoundException("Config file not found: " + filenameWithExtension);
+			throw new ConfigException("Config file not found: " + filenameWithExtension);
 		}
 		properties.load(fis);
 	}
@@ -32,7 +33,7 @@ public final class EnvironmentProperties {
 		try {
 			return new EnvironmentProperties(filename);
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to load " + filename + " " + e.getMessage());
+			throw new ConfigException("Failed to load " + filename + " " + e.getMessage());
 		}
 	}
 
@@ -76,7 +77,7 @@ public final class EnvironmentProperties {
 			return cfg;
 		}
 
-		throw new IllegalArgumentException(key + " not provided");
+		throw new ConfigException(key + " not provided");
 	}
 
 	private String getProperty(String key, String defaultValue) {

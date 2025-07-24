@@ -4,7 +4,6 @@ import java.util.Map;
 
 import org.openqa.selenium.WebDriver;
 
-import com.trgan.base.ResultData;
 import com.trgan.exceptions.ContextException;
 import com.trgan.framework.actions.ActionEngineImpl;
 import com.trgan.framework.config.EnvironmentProperties;
