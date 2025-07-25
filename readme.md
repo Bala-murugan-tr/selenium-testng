@@ -1,4 +1,3 @@
-[under development]
 # Selenium-TestNG-ExtentReport Hybrid Framework
 
 A robust automation framework enabling parallel Selenium tests with TestNG and ExtentReports. Supports local, Grid, and cloud execution, multiple browsers and seamless CI/CD integration.

@@ -35,7 +35,6 @@ public class ActionEngine {
 
 	protected final MetaData metaData = TestContextManager.getContext().getMetaData();
 
-
 	public ActionEngine() {
 		int maxAttempts = FrameworkProperties.retryMaxAttempt();
 		int delayMs = FrameworkProperties.retryDelayMs();
@@ -45,7 +44,7 @@ public class ActionEngine {
 	}
 
 	protected final void warning(String message) {
-		TestContextManager.getContext().getReportContext().getNode().warning(message);
+		TestContextManager.getContext().getReportContext().getIndividualTestNode().warning(message);
 		TestContextManager.getLogger().log("[X] " + message);
 	}
 
@@ -53,7 +52,7 @@ public class ActionEngine {
 	 * Can be used to retrieve excel value mapped to the given key from the excel,
 	 * This method is indended for Single sheet excel(single sheet containing all
 	 * data for test execution).
-	 * 
+	 *
 	 * @param key
 	 * @return value for given key
 	 */
@@ -80,7 +79,7 @@ public class ActionEngine {
 	 * Can be used to retrieve excel value mapped to the given key from the
 	 * specified sheet in Excel. This method is indended for multi-sheet excel(sheet
 	 * based data)s sheet.
-	 * 
+	 *
 	 * @param key
 	 * @return value for given key
 	 */

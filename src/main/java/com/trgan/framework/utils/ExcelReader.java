@@ -40,7 +40,7 @@ public class ExcelReader {
 
 	/**
 	 * method to refine the excel file path based on provided {@link DataStrategy}.
-	 * 
+	 *
 	 * @return excel file full path
 	 */
 	private static String resolvedExcelFilePath() {

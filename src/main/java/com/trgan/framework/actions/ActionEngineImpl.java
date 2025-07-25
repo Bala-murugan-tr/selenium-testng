@@ -184,7 +184,8 @@ public final class ActionEngineImpl implements IActionEngine {
 
 	// *****************PRIVATE METHODS*********************************//
 	private void log(String message) {
-		TestContextManager.getContext().getReportContext().getNode().pass(message);
+		TestContextManager.getContext().getReportContext().getIndividualTestNode().pass(message);
+		TestContextManager.getContext().getReportContext().getGlobalTestNode().pass(message);
 		TestContextManager.getContext().getReportContext().getLogger().log(message);
 	}
 

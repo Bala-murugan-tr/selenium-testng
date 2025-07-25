@@ -9,10 +9,11 @@ import com.trgan.framework.utils.TestLogger;
  * class to handle report related contexts
  */
 public class ReportContext {
-	private ExtentReports individualExtent;
 	private ExtentTest globalTest;
+	private ExtentTest globalTestnode;
+	private ExtentReports individualExtent;
 	private ExtentTest individualTest;
-	private ExtentTest node;
+	private ExtentTest individualTestNode;
 	private TestLogger logger;
 	private String reportDir;
 	private ResultData resultData;
@@ -27,56 +28,64 @@ public class ReportContext {
 		this.resultData = new ResultData();
 	}
 
-	public ExtentReports getIndividualExtent() {
-		return this.individualExtent;
-	}
-
-	public void setIndividualExtent(ExtentReports individualExtent) {
-		this.individualExtent = individualExtent;
-	}
-
 	public ExtentTest getGlobalTest() {
 		return this.globalTest;
 	}
 
-	public void setGlobalTest(ExtentTest globalTest) {
-		this.globalTest = globalTest;
+	public ExtentTest getGlobalTestNode() {
+		return this.globalTestnode;
+	}
+
+	public ExtentReports getIndividualExtent() {
+		return this.individualExtent;
 	}
 
 	public ExtentTest getIndividualTest() {
 		return this.individualTest;
 	}
 
-	public void setIndividualTest(ExtentTest individualTest) {
-		this.individualTest = individualTest;
-	}
-
-	public ExtentTest getNode() {
-		return this.node;
-	}
-
-	public void setNode(String description) {
-		this.node = individualTest.createNode(description);
+	public ExtentTest getIndividualTestNode() {
+		return this.individualTestNode;
 	}
 
 	public TestLogger getLogger() {
 		return this.logger;
 	}
 
-	public void setLogger(TestLogger logger) {
-		this.logger = logger;
-	}
-
 	public String getReportDir() {
 		return this.reportDir;
 	}
 
-	public void setReportDir(String reportDir) {
-		this.reportDir = reportDir;
-	}
-
 	public ResultData getResultData() {
 		return this.resultData;
+	}
+
+	public void setGlobalTest(ExtentTest globalTest) {
+		this.globalTest = globalTest;
+	}
+
+	public void setGlobalTestNode(String description) {
+		this.globalTestnode = globalTest.createNode(description);
+	}
+
+	public void setIndividualExtent(ExtentReports individualExtent) {
+		this.individualExtent = individualExtent;
+	}
+
+	public void setIndividualTest(ExtentTest individualTest) {
+		this.individualTest = individualTest;
+	}
+
+	public void setIndividualTestNode(String description) {
+		this.individualTestNode = individualTest.createNode(description);
+	}
+
+	public void setLogger(TestLogger logger) {
+		this.logger = logger;
+	}
+
+	public void setReportDir(String reportDir) {
+		this.reportDir = reportDir;
 	}
 
 }

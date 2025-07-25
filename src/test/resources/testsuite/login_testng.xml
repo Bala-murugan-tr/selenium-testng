@@ -4,7 +4,6 @@
 <listeners>
   <listener class-name="com.trgan.framework.utils.RetryTransformer"/>
 </listeners>
-
 	<parameter name="group" value="Regression" />
   	<test thread-count="2" parallel="classes" name="Test">
     	<classes>

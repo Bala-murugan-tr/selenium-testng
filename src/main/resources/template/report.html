@@ -13,6 +13,19 @@
     <meta name="framework" content="Selenium, TestNG">
     <title>Automation Report</title>
     <style type="text/css">
+        .version-watermark {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-style: italic;
+            font-size: 0.9em;
+            color: rgba(0, 0, 0, 0.4);
+            /* subtle grey */
+            pointer-events: none;
+            /* avoids interfering with clicks */
+            z-index: 9999;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, sans-serif;
             background-color: #f8f9fc;
@@ -86,12 +99,31 @@
             color: #34495e;
         }
 
-        /* !--META LINE-- */
+        .meta-info-out {
+            padding-left: 120px;
+            justify-items: left;
+        }
+
+        .layout {
+            flex: 1;
+            min-width: 280px;
+        }
+
         .meta-info {
             text-align: center;
             font-size: 15px;
             margin-top: -20px;
             margin-bottom: 30px;
+            color: #5c5c5c;
+            font-style: italic;
+            letter-spacing: 0.3px;
+        }
+
+        .meta-info-line {
+            text-align: center;
+            font-size: 15px;
+            margin-top: -20px;
+            margin-bottom: -45px;
             color: #5c5c5c;
             font-style: italic;
             letter-spacing: 0.3px;
@@ -288,10 +320,142 @@
 </head>
 
 <body>
+    <div class="version-watermark">v1.2.0</div>
+
     <h1>AUTOMATION REPORT</h1>
     <h2>EXECUTION SUMMARY</h2>
     <!-- SUMMARY_PANEL_START -->
+    <div class="summary-panel">
+        <div class="summary-item total">Total Tests: <span><!--TOTAL--></span></div>
+        <div class="summary-item pass">✔ Passed: <span><!--PASS--></span></div>
+        <div class="summary-item fail">❌ Failed: <span><!--FAIL--></span></div>
+        <div class="summary-item skip">⏭ Skipped: <span><!--SKIP--></span></div>
+        <div class="summary-item duration">⏱ Duration: <span><!--DURATION--></span></div>
+    </div>
+
     <!-- META_INFO_LINE -->
+    <p id="inline-summary" style="display: none;" class="meta-info-line"> 🧑 Executed by:
+        <strong><!--EXECUTED BY--></strong> |
+        🛠️ Mode: <strong><!--MODE--> </strong>|
+        🌐 Enivronment <strong><!--ENVIRONMENT--> </strong>|
+        📅 Date: <strong><!--DATE--> </strong>|
+        🔄 Sprint <strong><!--SPRINT--></strong> </p>
+
+    <button id="chart-toggle"onclick="toggleSummaryPanel()" style="
+    margin: 20px auto 10px;
+    background-color: #eaf1f8;
+    color: rgb(88, 102, 141);
+    padding: 10px 20px;
+    font-size: 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;">
+        Hide Chart
+    </button>
+
+    <div id="summaryPanel" style="
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+    flex-wrap: wrap;
+    margin-bottom: 40px;">
+        <div class="layout">
+            <div class="meta-info-out">
+                <!-- META_INFO_LINE -->
+                <p class="meta-info"> 🧑 Executed by: <strong><!--EXECUTED BY--></strong></p>
+                <p class="meta-info"> 🛠️ Mode: <strong><!--MODE--></strong></p>
+                <p class="meta-info"> 🌐 Enivronment <strong><!--ENVIRONMENT--></strong> </p>
+                <p class="meta-info"> 📅 Date: <strong><!--DATE--></strong></p>
+                <p class="meta-info"> 🔄 Sprint <strong><!--SPRINT--></strong> </p>
+            </div>
+        </div>
+        <div class="layout">
+            <canvas id="testSummaryChart" width="360" height="210"
+                style="display: block; margin:0 auto"></canvas>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            const passCount = /*PASS*/10;
+            const failCount = /*FAIL*/10;
+            const skipCount = /*SKIP*/10;
+            const totalCount = passCount + failCount + skipCount;
+
+            const ctx = document.getElementById('testSummaryChart').getContext('2d');
+            const testSummaryChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: [
+                        `Pass ${passCount}`,
+                        `Fail ${failCount}`,
+                        `Skip ${skipCount}`,
+                    ],
+                    datasets: [{
+                        data: [passCount, failCount, skipCount],
+                        backgroundColor: ['#2ecc71', '#e74c3c', '#f1c40f'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            align: 'end',
+                            labels: {
+                                font: { size: 14 },
+                                boxWidth: 20,
+                                generateLabels: function (chart) {
+                                    const data = chart.data.datasets[0].data;
+                                    const labels = chart.data.labels;
+                                    return labels.map((label, i) => ({
+                                        text: label,
+                                        fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                        hidden: false,
+                                        index: i
+                                    })).concat([{
+                                        text: `Total: ${totalCount}`,
+                                        fillStyle: '#34495e',
+                                        hidden: false,
+                                        index: -1
+                                    }]);
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const percent = ((value / totalCount) * 100).toFixed(1);
+                                    return `${label}: ${value} (${percent}%)`;
+                                }
+                            }
+                        }
+                    },
+                    layout: {
+                        padding: {
+                            right: 20,
+                            bottom: 20
+                        }
+                    }
+                }
+            });
+        </script>
+    </div>
+
+    <script>
+        function toggleSummaryPanel() {
+            const panel = document.getElementById('summaryPanel');
+            const metaLine = document.getElementById('inline-summary');
+            const toggle = document.getElementById('chart-toggle');
+
+            panel.style.display = (panel.style.display === 'none') ? 'flex' : 'none';
+            metaLine.style.display = (metaLine.style.display === 'none') ? 'block' : 'none';
+            toggle.textContent = (toggle.textContent==='View Chart')?'Hide Chart':'View Chart';
+
+        }
+    </script>
+    </div>
     <h2>EXECUTION STATUS</h2>
     <table name="status">
         <tr>
@@ -338,11 +502,18 @@
     <table name="link-table">
         <tr>
             <th>Test Name</th>
-            <th "style=width: 50px;">Attempt</th>
+            <th style=width:50px;>Attempt</th>
             <th>Result</th>
             <th>Message</th>
         </tr>
         <!-- PATH_START -->
+        <tr>
+            <td><a href='<!--PATH-->' title='Click to open report' target='_blank'><!--TESTNAME--></a></td>
+            <td style='width:40px'><!--ATTEMPT--></td>
+            <td class='<!--RESULT-->'><!--RESULT--></td>
+            <td style='text-align:left; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;'
+                title='<!--MESSAGE-->'><!--MESSAGE--></td>
+        </tr>
     </table>
 </body>
 

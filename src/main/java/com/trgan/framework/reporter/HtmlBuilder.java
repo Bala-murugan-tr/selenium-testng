@@ -41,7 +41,7 @@ public class HtmlBuilder {
 		resultRows.add(data);
 	}
 
-	public void generate(String executor, String mode, String outputPath) {
+	public void generate(String executor, String mode, String environment, String buildNo, String outputPath) {
 		try {
 			String template = Files.readString(Paths.get(templatePath));
 			int total = 0, passed = 0, failed = 0, skipped = 0;
@@ -77,24 +77,22 @@ public class HtmlBuilder {
 			Duration duration = Duration.between(earliest, latest);
 			String overallDuration = String.format("%02d:%02d:%02d", duration.toHours(), duration.toMinutesPart(),
 					duration.toSecondsPart());
-
-			String summaryHtml = """
-					<div class="summary-panel">
-					    <div class="summary-item total">Total Tests: <span>%d</span></div>
-					    <div class="summary-item pass">✔ Passed: <span>%d</span></div>
-					    <div class="summary-item fail">❌ Failed: <span>%d</span></div>
-					    <div class="summary-item skip">⏭ Skipped: <span>%d</span></div>
-					    <div class="summary-item duration">⏱ Duration: <span>%s</span></div>
-					</div>
-					""".formatted(total, passed, failed, skipped, overallDuration);
-
-			String metaLineHtml = """
-					<p class="meta-info">
-					  🧑‍💻 Executed by: <strong>%s</strong> |
-					  🛠️ Mode: <strong>%s</strong> |
-					  📅 Date: <strong>%s</strong>
-					</p>
-					""".formatted(executor, mode, LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMM yyyy")));
+			// SUMMARY DETAILS
+			template = template.replace("<!--TOTAL-->", "" + total);
+			template = template.replace("<!--PASS-->", "" + passed);
+			template = template.replace("<!--FAIL-->", "" + failed);
+			template = template.replace("<!--SKIP-->", "" + skipped);
+			template = template.replace("<!--DURATION -->", "" + overallDuration);
+			// META DETAILS
+			template = template.replace("<!--EXECUTED BY-->", executor);
+			template = template.replace("<!--MODE-->", mode);
+			template = template.replace("<!--ENVIRONMENT-->", environment);
+			template = template.replace("<!--DATE-->",
+					LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMM yyyy")));
+			template = template.replace("<!--SPRINT-->", buildNo);
+			template = template.replace("/*PASS*/10", "" + passed);
+			template = template.replace("/*FAIL*/10", "" + failed);
+			template = template.replace("/*SKIP*/10", "" + skipped);
 
 			StringBuilder resultHtml = new StringBuilder();
 			for (ResultData q : resultRows) {
@@ -112,19 +110,18 @@ public class HtmlBuilder {
 				String result = list.get(3);
 				String message = list.get(4);
 
-				reportLinkHtml.append("<tr>")
-						.append("<td><a href='." + filePath + "'title='Click to open report' target='_blank'>"
-								+ testName + "</a></td>")
-						.append("<td style='width:40px'>" + attempt + "</td>")
-						.append("<td class='" + result.toLowerCase() + "'>" + result + "</td>")
-						.append("<td style='text-align:left; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;' title='"
-								+ message + "'>" + message + "</td>")
-						.append("</tr>\n");
+				// @formatter:off
+				reportLinkHtml.append("<tr>\r\n"
+						+ "            <td><a href='."+filePath+"' title='Click to open report' target='_blank'>"+testName+"</a></td>\r\n"
+						+ "            <td style='width:40px'>"+attempt+"</td>\r\n"
+						+ "            <td class='" + result.toLowerCase() + "'>"+result+"</td>\r\n"
+						+ "            <td style='text-align:left; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;'"
+						+ "                title='"+message+"'>"+message+"</td>\r\n"
+						+ "        </tr>");
+				// @formatter:on
 			}
 
 			String finalHtml = template.replace("<!-- STATUS_START -->", statusHtml.toString())
-					.replace("<!-- SUMMARY_PANEL_START -->", summaryHtml)
-					.replace("<!-- META_INFO_LINE -->", metaLineHtml)
 					.replace("<!-- DATA_START -->", resultHtml.toString().replaceAll("null", "-"))
 					.replace("<!-- PATH_START -->", reportLinkHtml.toString());
 
